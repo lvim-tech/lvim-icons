@@ -87,6 +87,22 @@ function M.active_mode()
     return svg.active_mode()
 end
 
+--- A lookup map keyed by data-table KEY (extension / filename / filetype), each entry
+--- materialised — for consumers that need the WHOLE table at once (e.g. building a static
+--- key→glyph map for an fzf awk transformer) rather than resolving one name at a time.
+---@return table<string, { icon: string, color: string, hl: string, name: string }>
+function M.get_icons()
+    local T = resolve.tables()
+    local out = {}
+    for _, key in ipairs({ "extensions", "filenames", "filetypes" }) do
+        for k, spec in pairs(T[key]) do
+            local r = resolve.materialise(spec)
+            out[k] = { icon = r.glyph, color = r.color, hl = r.hl, name = r.name }
+        end
+    end
+    return out
+end
+
 -- ── overrides ────────────────────────────────────────────────────────────────
 
 --- Merge user additions / overrides into the live data tables (same shape as the built-ins).
