@@ -32,39 +32,43 @@ local registered = false
 
 --- Resolve an icon for a path or bare filename through the full lookup chain
 --- (filename → extension → filetype → default). Always returns a renderable result.
----@param name string                         a path or bare filename
----@param opts { filetype?: string, kind?: string }?  filetype hint / a filesystem-kind request
+---@param name string  a path or bare filename
+---@param opts { filetype?: string, kind?: string, color_mode?: string }?  filetype/kind hints; a per-call colour-mode override ("theme"|"brand"|"theme_brand")
 ---@return LvimIconResult
 function M.get(name, opts)
-    return resolve.materialise(resolve.spec_for(name, opts))
+    return resolve.materialise(resolve.spec_for(name, opts), opts)
 end
 
 --- Direct extension lookup (no chain), e.g. `by_extension("tsx")`.
 ---@param ext string
+---@param opts { color_mode?: string }?
 ---@return LvimIconResult
-function M.by_extension(ext)
-    return resolve.by_extension(ext)
+function M.by_extension(ext, opts)
+    return resolve.by_extension(ext, opts)
 end
 
 --- Direct filename lookup (no chain), e.g. `by_filename("Cargo.toml")`.
 ---@param filename string
+---@param opts { color_mode?: string }?
 ---@return LvimIconResult
-function M.by_filename(filename)
-    return resolve.by_filename(filename)
+function M.by_filename(filename, opts)
+    return resolve.by_filename(filename, opts)
 end
 
 --- Direct filetype lookup (no chain), e.g. `by_filetype("help")`.
 ---@param ft string
+---@param opts { color_mode?: string }?
 ---@return LvimIconResult
-function M.by_filetype(ft)
-    return resolve.by_filetype(ft)
+function M.by_filetype(ft, opts)
+    return resolve.by_filetype(ft, opts)
 end
 
 --- Direct filesystem-kind lookup (directory/directory_open/symlink/executable/…).
 ---@param kind string
+---@param opts { color_mode?: string }?
 ---@return LvimIconResult
-function M.by_kind(kind)
-    return resolve.by_kind(kind)
+function M.by_kind(kind, opts)
+    return resolve.by_kind(kind, opts)
 end
 
 --- Every icon, materialised — for consumers building their own gallery/audit.
@@ -90,13 +94,14 @@ end
 --- A lookup map keyed by data-table KEY (extension / filename / filetype), each entry
 --- materialised — for consumers that need the WHOLE table at once (e.g. building a static
 --- key→glyph map for an fzf awk transformer) rather than resolving one name at a time.
+---@param opts { color_mode?: string }?  per-call colour-mode override ("theme"|"brand"|"theme_brand")
 ---@return table<string, { icon: string, color: string, hl: string, name: string }>
-function M.get_icons()
+function M.get_icons(opts)
     local T = resolve.tables()
     local out = {}
     for _, key in ipairs({ "extensions", "filenames", "filetypes" }) do
         for k, spec in pairs(T[key]) do
-            local r = resolve.materialise(spec)
+            local r = resolve.materialise(spec, opts)
             out[k] = { icon = r.glyph, color = r.color, hl = r.hl, name = r.name }
         end
     end

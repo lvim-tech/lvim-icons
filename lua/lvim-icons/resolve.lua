@@ -36,9 +36,12 @@ local M = {}
 ---@field name  string   The stable icon id
 
 --- Turn a raw spec into the public result, honouring the active render + colour modes.
+--- `opts.color_mode` overrides the global config colour mode for THIS call (so a consumer can
+--- pick "theme"/"brand"/"theme_brand" per plugin without touching the global config).
 ---@param spec LvimIconSpec
+---@param opts { color_mode?: string }?
 ---@return LvimIconResult
-function M.materialise(spec)
+function M.materialise(spec, opts)
     -- Render mode → glyph + width. In svg mode, use the icon's ligature sequence when it has
     -- one; otherwise fall back to its font glyph for THIS icon (per-icon graceful degradation).
     local glyph, width
@@ -54,10 +57,14 @@ function M.materialise(spec)
     end
 
     -- Colour mode → highlight group + resolved hex.
+    --   "theme"                 → a palette role that follows the colorscheme.
+    --   "brand" / "theme_brand" → the icon's real brand hue (raw, or blended toward the theme).
+    -- An icon with no brand hex always falls back to its theme role.
+    local mode = (opts and opts.color_mode) or config.color_mode
     local group, color
-    if config.color_mode == "brand" and spec.brand then
-        group = highlights.brand_group(spec.brand)
-        color = require("lvim-utils.highlight").blend(spec.brand, c.bg, config.brand_blend)
+    if mode ~= "theme" and spec.brand then
+        group = highlights.brand_group(spec.brand, mode)
+        color = highlights.brand_color(spec.brand, mode)
     else
         local role = spec.role or "fg"
         group = highlights.role_group(role)
@@ -117,30 +124,34 @@ end
 
 --- Direct extension lookup (no chain). Returns the default when unmapped.
 ---@param ext string  extension without a dot
+---@param opts { color_mode?: string }?
 ---@return LvimIconResult
-function M.by_extension(ext)
-    return M.materialise(T.extensions[(ext or ""):lower()] or config.default)
+function M.by_extension(ext, opts)
+    return M.materialise(T.extensions[(ext or ""):lower()] or config.default, opts)
 end
 
 --- Direct filename lookup (no chain). Returns the default when unmapped.
 ---@param filename string  exact basename
+---@param opts { color_mode?: string }?
 ---@return LvimIconResult
-function M.by_filename(filename)
-    return M.materialise(T.filenames[filename or ""] or config.default)
+function M.by_filename(filename, opts)
+    return M.materialise(T.filenames[filename or ""] or config.default, opts)
 end
 
 --- Direct filetype lookup (no chain). Returns the default when unmapped.
 ---@param ft string  &filetype value
+---@param opts { color_mode?: string }?
 ---@return LvimIconResult
-function M.by_filetype(ft)
-    return M.materialise(T.filetypes[ft or ""] or config.default)
+function M.by_filetype(ft, opts)
+    return M.materialise(T.filetypes[ft or ""] or config.default, opts)
 end
 
 --- Direct filesystem-kind lookup (directory/symlink/executable/…). Default when unmapped.
 ---@param kind string
+---@param opts { color_mode?: string }?
 ---@return LvimIconResult
-function M.by_kind(kind)
-    return M.materialise(T.special[kind or ""] or config.default)
+function M.by_kind(kind, opts)
+    return M.materialise(T.special[kind or ""] or config.default, opts)
 end
 
 --- Every distinct icon spec across the data tables, keyed by icon name (deduped). For the

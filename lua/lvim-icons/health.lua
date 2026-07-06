@@ -17,7 +17,7 @@ local M = {}
 ---@type table<string, boolean>
 local VALID_MODE = { font = true, svg = true, auto = true }
 ---@type table<string, boolean>
-local VALID_COLOR_MODE = { palette = true, brand = true }
+local VALID_COLOR_MODE = { theme = true, brand = true, theme_brand = true }
 
 --- Audit every data-table glyph for single display width (canon: single-width Nerd Font only).
 ---@param health table  the vim.health reporter
@@ -55,7 +55,7 @@ local function check_config(health)
     if VALID_COLOR_MODE[config.color_mode] then
         health.ok(("color_mode = %q"):format(config.color_mode))
     else
-        health.error(("color_mode = %q is invalid (palette|brand)"):format(tostring(config.color_mode)))
+        health.error(("color_mode = %q is invalid (theme|brand|theme_brand)"):format(tostring(config.color_mode)))
     end
     if type(config.brand_blend) ~= "number" or config.brand_blend < 0 or config.brand_blend > 1 then
         health.warn(("brand_blend = %s should be a number in 0..1"):format(tostring(config.brand_blend)))

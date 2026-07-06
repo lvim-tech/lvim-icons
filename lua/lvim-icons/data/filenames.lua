@@ -53,4 +53,37 @@ return {
     ["LICENSE"] = { cp = 0xF0219, role = "yellow", brand = "#cbcb41", name = "license" },
     ["LICENSE.md"] = { cp = 0xF0219, role = "yellow", brand = "#cbcb41", name = "license" },
     ["CHANGELOG.md"] = { cp = 0xF099B, role = "green", brand = "#519aba", name = "changelog" },
+    ["CONTRIBUTING.md"] = { cp = 0xF02D2, role = "cyan", brand = "#519aba", name = "readme" },
+    ["AUTHORS"] = { cp = 0xF0219, role = "yellow", brand = "#cbcb41", name = "authors" },
+
+    -- ── Ruby / Python / PHP project files ─────────────────────────────────────
+    ["Gemfile"] = { cp = 0xE739, role = "red", brand = "#701516", name = "ruby" },
+    ["Gemfile.lock"] = { cp = 0xE739, role = "fg", brand = "#701516", name = "ruby" },
+    ["Rakefile"] = { cp = 0xE739, role = "red", brand = "#701516", name = "ruby" },
+    ["requirements.txt"] = { cp = 0xE73C, role = "yellow", brand = "#ffbc03", name = "python" },
+    ["pyproject.toml"] = { cp = 0xE73C, role = "yellow", brand = "#ffbc03", name = "python" },
+    ["Pipfile"] = { cp = 0xE73C, role = "yellow", brand = "#ffbc03", name = "python" },
+    ["setup.py"] = { cp = 0xE73C, role = "yellow", brand = "#ffbc03", name = "python" },
+    ["composer.json"] = { cp = 0xE73D, role = "purple", brand = "#a074c4", name = "php" },
+
+    -- ── CI / infra / containers ───────────────────────────────────────────────
+    ["Vagrantfile"] = { cp = 0xE62A, role = "cyan", brand = "#1563ff", name = "vagrant" },
+    ["Procfile"] = { cp = 0xE607, role = "purple", brand = "#a074c4", name = "heroku" },
+    ["Jenkinsfile"] = { cp = 0xE767, role = "red", brand = "#d33833", name = "jenkins" },
+    [".gitlab-ci.yml"] = { cp = 0xF296, role = "orange", brand = "#e24329", name = "gitlab" },
+    [".travis.yml"] = { cp = 0xE77E, role = "red", brand = "#cb4f4f", name = "travis" },
+    ["flake.nix"] = { cp = 0xF313, role = "blue", brand = "#7ebae4", name = "nix" },
+    ["shell.nix"] = { cp = 0xF313, role = "blue", brand = "#7ebae4", name = "nix" },
+    ["default.nix"] = { cp = 0xF313, role = "blue", brand = "#7ebae4", name = "nix" },
+
+    -- ── Node / JS tooling ─────────────────────────────────────────────────────
+    ["bun.lockb"] = { cp = 0xE76F, role = "fg", brand = "#fbf0df", name = "bun" },
+    [".babelrc"] = { cp = 0xE639, role = "yellow", brand = "#f5da55", name = "babel" },
+    ["babel.config.js"] = { cp = 0xE639, role = "yellow", brand = "#f5da55", name = "babel" },
+    ["webpack.config.js"] = { cp = 0xF072B, role = "cyan", brand = "#519aba", name = "webpack" },
+    ["vite.config.js"] = { cp = 0xF0A21, role = "purple", brand = "#646cff", name = "vite" },
+    ["vite.config.ts"] = { cp = 0xF0A21, role = "purple", brand = "#646cff", name = "vite" },
+    ["tailwind.config.js"] = { cp = 0xF13FF, role = "cyan", brand = "#38bdf8", name = "tailwind" },
+    [".prettierignore"] = { cp = 0xE6B4, role = "cyan", brand = "#56b3b4", name = "prettier" },
+    [".eslintignore"] = { cp = 0xE655, role = "purple", brand = "#4b32c3", name = "eslint" },
 }

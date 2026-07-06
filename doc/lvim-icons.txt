@@ -59,8 +59,8 @@ change the render/colour mode, add overrides, or register |:LvimIcons|. >lua
 
     require("lvim-icons").setup({
         mode = "font",          -- "font" | "svg" | "auto"
-        color_mode = "palette", -- font mode: "palette" | "brand"
-        brand_blend = 1.0,      -- brand mode: blend toward bg (1.0 = raw brand hex)
+        color_mode = "brand",   -- "brand" (real colours) | "theme" | "theme_brand"
+        brand_blend = 0.7,      -- theme_brand: keep this much brand hue (1.0 = raw)
         svg = {
             font_family = "LvimIcons",
             assume_supported = false,
@@ -136,15 +136,24 @@ glyphs are two cells wide — always align columns from the returned `width`.
 ==============================================================================
 6. COLOURS                                              *lvim-icons-colours*
 
-`color_mode` selects the font-mode colour source:
+`color_mode` selects where an icon's colour comes from — three modes:
 
-    "palette"  Each icon maps to a palette role (blue/green/red/…); one
-               highlight group per role, re-derived on every colorscheme /
-               palette sync.
-    "brand"    The icon's upstream brand hex, blended toward the editor
-               background by `brand_blend` (1.0 = raw brand colour, lower pulls
-               it toward the background). Brand groups are made lazily and also
-               track a background flip.
+    "brand"        The icon's REAL upstream brand colour, verbatim — INDEPENDENT
+                   of the theme (the classic nvim-web-devicons look, each file
+                   type in its own brand colour). (The default.)
+    "theme"        Each icon takes a palette role (blue/green/red/…). Self-
+                   theming: the LvimIcon<Role> groups re-derive on every
+                   colorscheme / palette sync, so icons follow the theme.
+    "theme_brand"  The brand colour blended toward the theme background by
+                   `brand_blend` (a mix: the brand hue pulled into the theme).
+                   1.0 = raw brand colour, lower pulls it toward the background.
+
+The mode can also be overridden PER CALL: >lua
+
+    require("lvim-icons").get(name, { color_mode = "brand" })
+<
+so a consumer chooses a mode without touching the global config. Each lvim-tech
+consumer exposes an `icon_color_mode` option that forwards here.
 
 ==============================================================================
 7. OVERRIDES                                          *lvim-icons-overrides*
@@ -157,9 +166,12 @@ An override spec is: >lua
     cp     integer  Nerd Font codepoint (the font-mode glyph)
     role   string   Palette role: red/green/blue/cyan/magenta/orange/yellow/
                     purple/teal/fg
-    brand  string   Upstream brand hex (#rrggbb) — used only in brand mode
+    brand  string   Upstream brand hex (#rrggbb) — used in "brand"/"theme_brand"
     name   string   Stable icon id (gallery label + svg-overlay key)
 
+The same shape overrides a BUILT-IN (recolour or reglyph it) or adds a new one.
+The bundled set covers ~300 extensions/filenames/filetypes; anything unmapped
+falls back to `default` — extend it here rather than editing the plugin.
 Keys are lower-case extensions / filetypes and exact filenames. Example: >lua
 
     require("lvim-icons").setup({

@@ -1,9 +1,9 @@
 # lvim-icons
 
 The single icon provider of the **lvim-tech** set — resolve a filename, extension, filetype or
-filesystem kind to a renderable icon `{ glyph, hl, color, width }`. Unlike a hardcoded
-hex-per-icon table, colours come from the **live lvim-utils palette**, so icons always harmonise
-with the active theme and re-derive on a colorscheme change.
+filesystem kind to a renderable icon `{ glyph, hl, color, width }`. Colours are configurable: each
+file type in its **real brand colour** (the default), or driven from the **live lvim-utils
+palette** so icons follow the active theme, or a blend of the two (see [Colours](#colours)).
 
 Two render modes behind one resolver:
 
@@ -99,21 +99,53 @@ In svg mode glyphs are two cells wide — always align columns from the returned
 
 ## Colours
 
-`color_mode` selects the font-mode colour source:
+`color_mode` selects where an icon's colour comes from — three modes:
 
-- `"palette"` — each icon maps to a palette **role** (blue/green/red/…); one highlight group per
-  role, re-derived on every colorscheme / palette sync.
-- `"brand"` — the icon's upstream brand hex, blended toward the editor background by `brand_blend`
-  (`1.0` keeps the raw brand colour, lower pulls it toward the background). Brand groups are created
-  lazily and also track a background flip.
+- `"brand"` (default) — the icon's **real upstream brand colour**, verbatim — independent of the
+  theme (the classic nvim-web-devicons look: each file type in its own brand colour).
+- `"theme"` — each icon takes a palette **role** (blue/green/red/…). Self-theming: the
+  `LvimIcon<Role>` groups re-derive on every colorscheme / palette sync, so icons **follow the
+  active theme**.
+- `"theme_brand"` — the brand colour **blended toward the theme background** by `brand_blend` (a
+  mix: the brand hue, pulled into the theme so it doesn't clash). `1.0` keeps the raw brand colour,
+  lower pulls it toward the background. Brand groups are created lazily and track a background flip.
+
+The mode can also be overridden **per call**: `icons.get(name, { color_mode = "brand" })` — so a
+consumer can pick a mode without touching the global config (each lvim-tech plugin exposes an
+`icon_color_mode` option that forwards here).
+
+## Adding / overriding icons
+
+Add new file types or override built-ins at setup via `overrides` (or at runtime with
+`icons.override(tbl)`). The keys are lower-case extensions / filetypes and exact filenames; the
+spec is `{ cp = <Nerd Font codepoint>, role = "<palette role>", brand = "#rrggbb", name = "<id>" }`.
+
+```lua
+require("lvim-icons").setup({
+    overrides = {
+        extensions = {
+            astro = { cp = 0xE6B3, role = "orange", brand = "#ff5d01", name = "astro" },
+            lua = { cp = 0xE620, role = "red", brand = "#000080", name = "lua" }, -- recolour a built-in
+        },
+        filenames = {
+            ["flake.nix"] = { cp = 0xF313, role = "blue", brand = "#7ebae4", name = "nix" },
+        },
+        filetypes = {},
+    },
+})
+```
+
+The bundled set covers ~300 extensions / filenames / filetypes (top languages, configs, data,
+office, media, fonts, design, infra). Anything unmapped falls back to the `default` spec — and you
+extend it here rather than editing the plugin.
 
 ## Default configuration
 
 ```lua
 require("lvim-icons").setup({
     mode = "font", -- "font" | "svg" | "auto"
-    color_mode = "palette", -- font mode: "palette" | "brand"
-    brand_blend = 1.0, -- brand mode: blend toward bg (1.0 = raw brand hex)
+    color_mode = "brand", -- "brand" (real per-type colours) | "theme" | "theme_brand"
+    brand_blend = 0.7, -- theme_brand: keep this much brand hue (1.0 = raw, 0.0 = theme bg)
     svg = {
         font_family = "LvimIcons", -- fc-list probe target
         assume_supported = false, -- skip the terminal allowlist (your terminal shapes COLRv1)
@@ -122,14 +154,11 @@ require("lvim-icons").setup({
     default = { cp = 0xF15B, role = "fg", name = "default" },
     overrides = {
         extensions = {}, -- e.g. astro = { cp = 0xE6B3, role = "orange", brand = "#ff5d01", name = "astro" }
-        filenames = {}, -- e.g. ["flake.nix"] = { cp = 0xF313, role = "blue", brand = "#7eb0e6", name = "nix" }
+        filenames = {}, -- e.g. ["flake.nix"] = { cp = 0xF313, role = "blue", brand = "#7ebae4", name = "nix" }
         filetypes = {},
     },
 })
 ```
-
-An override spec is `{ cp = <Nerd Font codepoint>, role = "<palette role>", brand = "#rrggbb", name
-= "<icon id>" }`. Keys are lower-case extensions / filetypes and exact filenames.
 
 ## Highlights
 

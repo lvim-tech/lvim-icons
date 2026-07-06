@@ -28,8 +28,8 @@
 
 ---@class LvimIconsConfig
 ---@field mode        "font"|"svg"|"auto"  Render mode (see the module header)
----@field color_mode  "palette"|"brand"    Font-mode colour source: a palette role, or the icon's brand hex blended to bg
----@field brand_blend number               brand mode: blend factor toward the editor bg (1.0 = raw brand hex, 0.0 = bg)
+---@field color_mode  "theme"|"brand"|"theme_brand"  Icon colour source (see the value comment below)
+---@field brand_blend number               theme_brand: how much of the brand hue to keep (1.0 = raw brand, 0.0 = theme bg)
 ---@field svg         LvimIconsSvgConfig    svg-mode options
 ---@field default     LvimIconSpec         The spec returned when nothing matches
 ---@field overrides   LvimIconsOverrides   User additions / overrides merged into the live data tables at setup
@@ -40,15 +40,18 @@ return {
     -- the shipped COLRv1 font + a shaping-capable terminal (see svg.lua / :checkhealth);
     -- "auto" resolves to "svg" only when both hold, else "font".
     mode = "font",
-    -- Font-mode colour source:
-    --   "palette" — each icon maps to a palette ROLE (blue/green/red/…) so icons always
-    --               harmonise with the active theme (one highlight group per role).
-    --   "brand"   — the upstream brand hex, blended toward the editor bg by `brand_blend`
-    --               so foreign colours sit in the theme (per-icon groups, created lazily).
-    color_mode = "palette",
-    -- brand mode only: how much of the brand hue to keep. 1.0 = the raw brand colour,
-    -- lower values pull it toward the editor background so it does not clash.
-    brand_blend = 1.0,
+    -- Icon colour source (font mode):
+    --   "brand"       — the icon's REAL upstream brand colour, verbatim — INDEPENDENT of the
+    --                   theme (the classic nvim-web-devicons look). THE DEFAULT.
+    --   "theme"       — each icon takes a palette ROLE colour (blue/green/red/…). Self-theming:
+    --                   the LvimIcon<Role> groups re-derive on every colorscheme / palette sync,
+    --                   so icons follow the active theme.
+    --   "theme_brand" — the brand colour blended toward the theme background by `brand_blend`
+    --                   (a MIX: the brand hue, but pulled into the theme so it does not clash).
+    color_mode = "brand",
+    -- theme_brand only: how much of the brand hue to keep. 1.0 = the raw brand colour, lower
+    -- values pull it toward the editor background. (Ignored by "theme" and "brand".)
+    brand_blend = 0.7,
     svg = {
         -- The font family the shipped COLRv1 glyphs live in; probed once with `fc-list`.
         font_family = "LvimIcons",
