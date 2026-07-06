@@ -1,0 +1,203 @@
+*lvim-icons.txt*        The icon provider of the lvim-tech set (font + svg modes)
+
+==============================================================================
+CONTENTS                                                        *lvim-icons*
+
+  1. Introduction ........................... |lvim-icons-intro|
+  2. Requirements ........................... |lvim-icons-requirements|
+  3. Setup .................................. |lvim-icons-setup|
+  4. API .................................... |lvim-icons-api|
+  5. Render modes ........................... |lvim-icons-modes|
+  6. Colours ................................ |lvim-icons-colours|
+  7. Overrides .............................. |lvim-icons-overrides|
+  8. Command ................................ |lvim-icons-command|
+  9. Highlights ............................. |lvim-icons-highlights|
+ 10. Health ................................. |lvim-icons-health|
+
+==============================================================================
+1. INTRODUCTION                                           *lvim-icons-intro*
+
+lvim-icons resolves a filename, extension, filetype or filesystem kind to a
+renderable icon: >
+
+    { glyph = "", hl = "LvimIconOrange", color = "#dea584", width = 1, name = "rust" }
+<
+Colours come from the LIVE lvim-utils palette (not a hardcoded hex per icon),
+so icons harmonise with the active theme and re-derive on a colorscheme
+change. It is the single icon provider for the lvim-tech set; other plugins
+resolve their file/ft icons here (a soft dependency — a consumer pcall-requires
+it and degrades to one default glyph).
+
+Two render modes sit behind one resolver:
+
+  font (default)  A single-width Nerd Font glyph + a palette highlight group.
+                  Works in every terminal.
+  svg             Full-colour COLRv1 vector glyphs, emitted as a plain-text
+                  ligature (an emoji base + variation selectors) that a
+                  shaping-capable terminal substitutes with the coloured glyph.
+                  Plain text, so it works anywhere text does (statuslines,
+                  trees, a fuzzy-finder TUI). Falls back to font mode when the
+                  font is not installed, and per-icon when an icon has no svg
+                  mapping.
+
+Every result carries `width` (1 in font mode, 2 in svg mode) so a consumer
+aligns columns from it and is svg-ready without a change.
+
+==============================================================================
+2. REQUIREMENTS                                    *lvim-icons-requirements*
+
+Neovim >= 0.10 and lvim-utils (palette + highlight engine). lvim-ui is
+optional — it powers the |:LvimIcons| gallery. svg mode additionally needs the
+shipped COLRv1 font installed and a terminal that shapes COLRv1 ligatures
+(kitty, WezTerm, Alacritty, foot, Konsole, GNOME Terminal).
+
+==============================================================================
+3. SETUP                                                  *lvim-icons-setup*
+
+setup() is optional — the font-mode defaults work without it. Call it to
+change the render/colour mode, add overrides, or register |:LvimIcons|. >lua
+
+    require("lvim-icons").setup({
+        mode = "font",          -- "font" | "svg" | "auto"
+        color_mode = "palette", -- font mode: "palette" | "brand"
+        brand_blend = 1.0,      -- brand mode: blend toward bg (1.0 = raw brand hex)
+        svg = {
+            font_family = "LvimIcons",
+            assume_supported = false,
+            variant = nil,      -- nil = follow the active lvim-colorscheme variant
+        },
+        default = { cp = 0xF15B, role = "fg", name = "default" },
+        overrides = { extensions = {}, filenames = {}, filetypes = {} },
+    })
+<
+setup() merges user options into the live config in place (via
+lvim-utils.utils.merge), so every reader of require("lvim-icons.config") sees
+the effective values.
+
+==============================================================================
+4. API                                                      *lvim-icons-api*
+
+                                                          *lvim-icons.get()*
+require("lvim-icons").get({name}, {opts})
+    Resolve an icon for a path or bare filename through the full lookup chain
+    and return a result table (see |lvim-icons-intro|). Always renderable.
+
+    {opts} (optional):
+        filetype  string  Filetype hint used when the name is weak
+                          (help, qf, terminal, pickers).
+        kind      string  A filesystem kind — short-circuits the chain:
+                          "directory", "directory_open", "directory_empty",
+                          "symlink", "symlink_dir", "symlink_broken",
+                          "executable", "file".
+
+    Resolution order: exact basename -> extension tail (longest first, so
+    `test.tsx` beats `tsx`) -> {opts.filetype} -> the configured default.
+
+                                                 *lvim-icons.by_extension()*
+require("lvim-icons").by_extension({ext})
+                                                  *lvim-icons.by_filename()*
+require("lvim-icons").by_filename({filename})
+                                                  *lvim-icons.by_filetype()*
+require("lvim-icons").by_filetype({ft})
+                                                      *lvim-icons.by_kind()*
+require("lvim-icons").by_kind({kind})
+    Direct single-table lookups (no chain). Each returns the default result
+    when the key is unmapped.
+
+                                                          *lvim-icons.all()*
+require("lvim-icons").all()
+    Every icon, materialised and sorted by name — for a custom gallery/audit.
+
+                                                  *lvim-icons.active_mode()*
+require("lvim-icons").active_mode()
+    The EFFECTIVE render mode after fallback resolution ("font" or "svg").
+
+                                                     *lvim-icons.override()*
+require("lvim-icons").override({overrides})
+    Merge additions/overrides into the live data tables at runtime. Same shape
+    as the setup `overrides` field.
+
+==============================================================================
+5. RENDER MODES                                           *lvim-icons-modes*
+
+`mode` selects how glyphs are emitted:
+
+    "font"   Nerd Font glyphs (the portable default).
+    "svg"    COLRv1 ligatures when the font is installed, else font mode.
+    "auto"   svg only when the font is installed AND the terminal is on the
+             known-good shaping allowlist; otherwise font.
+
+Terminal COLRv1 shaping cannot be detected at runtime (no terminal advertises
+it), so "auto" stays conservative. Set `svg.assume_supported = true` to vouch
+for a terminal that shapes COLRv1 but is not on the allowlist. In svg mode
+glyphs are two cells wide — always align columns from the returned `width`.
+|:checkhealth| reports the font/terminal state and the active mode.
+
+==============================================================================
+6. COLOURS                                              *lvim-icons-colours*
+
+`color_mode` selects the font-mode colour source:
+
+    "palette"  Each icon maps to a palette role (blue/green/red/…); one
+               highlight group per role, re-derived on every colorscheme /
+               palette sync.
+    "brand"    The icon's upstream brand hex, blended toward the editor
+               background by `brand_blend` (1.0 = raw brand colour, lower pulls
+               it toward the background). Brand groups are made lazily and also
+               track a background flip.
+
+==============================================================================
+7. OVERRIDES                                          *lvim-icons-overrides*
+
+Add or replace icons via `overrides` (in setup) or |lvim-icons.override()|.
+An override spec is: >lua
+
+    { cp = 0xE6B3, role = "orange", brand = "#ff5d01", name = "astro" }
+<
+    cp     integer  Nerd Font codepoint (the font-mode glyph)
+    role   string   Palette role: red/green/blue/cyan/magenta/orange/yellow/
+                    purple/teal/fg
+    brand  string   Upstream brand hex (#rrggbb) — used only in brand mode
+    name   string   Stable icon id (gallery label + svg-overlay key)
+
+Keys are lower-case extensions / filetypes and exact filenames. Example: >lua
+
+    require("lvim-icons").setup({
+        overrides = {
+            extensions = { astro = { cp = 0xE6B3, role = "orange", name = "astro" } },
+            filenames  = { ["flake.nix"] = { cp = 0xF313, role = "blue", name = "nix" } },
+        },
+    })
+<
+==============================================================================
+8. COMMAND                                              *lvim-icons-command*
+
+                                                              *:LvimIcons*
+:LvimIcons
+    Open a searchable icon gallery through the canonical lvim-ui picker.
+    Confirming a row yanks its glyph to the unnamed and "+" registers — handy
+    when authoring another plugin's UI. Registered by setup() (needs lvim-ui).
+
+==============================================================================
+9. HIGHLIGHTS                                        *lvim-icons-highlights*
+
+Font mode defines one group per palette role, self-themed from lvim-utils and
+overwritable by a colorscheme or your own setup:
+
+    LvimIconRed        LvimIconGreen      LvimIconBlue
+    LvimIconCyan       LvimIconMagenta    LvimIconOrange
+    LvimIconYellow     LvimIconPurple     LvimIconTeal
+    LvimIconFg
+
+Brand mode additionally creates LvimIconBrand_<hex> groups on demand.
+
+==============================================================================
+10. HEALTH                                               *lvim-icons-health*
+
+                                              *:checkhealth-lvim-icons*
+:checkhealth lvim-icons
+    Reports dependency presence, config validity, a single-width audit of every
+    glyph, and — for svg mode — whether the font is installed, whether the
+    terminal is known-good, and the resulting active render mode.
+
+vim:tw=78:ts=8:ft=help:norl:
