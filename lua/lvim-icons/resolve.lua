@@ -50,10 +50,10 @@ function M.materialise(spec, opts)
         if seq then
             glyph, width = seq, 2
         else
-            glyph, width = vim.fn.nr2char(spec.cp, 1), 1
+            glyph, width = spec.glyph, 1
         end
     else
-        glyph, width = vim.fn.nr2char(spec.cp, 1), 1
+        glyph, width = spec.glyph, 1
     end
 
     -- Colour mode → highlight group + resolved hex.

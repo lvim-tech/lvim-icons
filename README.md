@@ -118,17 +118,17 @@ consumer can pick a mode without touching the global config (each lvim-tech plug
 
 Add new file types or override built-ins at setup via `overrides` (or at runtime with
 `icons.override(tbl)`). The keys are lower-case extensions / filetypes and exact filenames; the
-spec is `{ cp = <Nerd Font codepoint>, role = "<palette role>", brand = "#rrggbb", name = "<id>" }`.
+spec is `{ glyph = "<Nerd Font glyph>", role = "<palette role>", brand = "#rrggbb", name = "<id>" }`.
 
 ```lua
 require("lvim-icons").setup({
     overrides = {
         extensions = {
-            astro = { cp = 0xE6B3, role = "orange", brand = "#ff5d01", name = "astro" },
-            lua = { cp = 0xE620, role = "red", brand = "#000080", name = "lua" }, -- recolour a built-in
+            astro = { glyph = "", role = "orange", brand = "#ff5d01", name = "astro" },
+            lua = { glyph = "", role = "red", brand = "#000080", name = "lua" }, -- recolour a built-in
         },
         filenames = {
-            ["flake.nix"] = { cp = 0xF313, role = "blue", brand = "#7ebae4", name = "nix" },
+            ["flake.nix"] = { glyph = "", role = "blue", brand = "#7ebae4", name = "nix" },
         },
         filetypes = {},
     },
@@ -151,10 +151,10 @@ require("lvim-icons").setup({
         assume_supported = false, -- skip the terminal allowlist (your terminal shapes COLRv1)
         variant = nil, -- nil = follow the active lvim-colorscheme variant
     },
-    default = { cp = 0xF15B, role = "fg", name = "default" },
+    default = { glyph = "", role = "fg", name = "default" },
     overrides = {
-        extensions = {}, -- e.g. astro = { cp = 0xE6B3, role = "orange", brand = "#ff5d01", name = "astro" }
-        filenames = {}, -- e.g. ["flake.nix"] = { cp = 0xF313, role = "blue", brand = "#7ebae4", name = "nix" }
+        extensions = {}, -- e.g. astro = { glyph = "", role = "orange", brand = "#ff5d01", name = "astro" }
+        filenames = {}, -- e.g. ["flake.nix"] = { glyph = "", role = "blue", brand = "#7ebae4", name = "nix" }
         filetypes = {},
     },
 })

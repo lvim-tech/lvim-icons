@@ -66,7 +66,7 @@ change the render/colour mode, add overrides, or register |:LvimIcons|. >lua
             assume_supported = false,
             variant = nil,      -- nil = follow the active lvim-colorscheme variant
         },
-        default = { cp = 0xF15B, role = "fg", name = "default" },
+        default = { glyph = "", role = "fg", name = "default" },
         overrides = { extensions = {}, filenames = {}, filetypes = {} },
     })
 <
@@ -161,9 +161,9 @@ consumer exposes an `icon_color_mode` option that forwards here.
 Add or replace icons via `overrides` (in setup) or |lvim-icons.override()|.
 An override spec is: >lua
 
-    { cp = 0xE6B3, role = "orange", brand = "#ff5d01", name = "astro" }
+    { glyph = "", role = "orange", brand = "#ff5d01", name = "astro" }
 <
-    cp     integer  Nerd Font codepoint (the font-mode glyph)
+    glyph  string   Nerd Font glyph (the font-mode character)
     role   string   Palette role: red/green/blue/cyan/magenta/orange/yellow/
                     purple/teal/fg
     brand  string   Upstream brand hex (#rrggbb) — used in "brand"/"theme_brand"
@@ -176,8 +176,8 @@ Keys are lower-case extensions / filetypes and exact filenames. Example: >lua
 
     require("lvim-icons").setup({
         overrides = {
-            extensions = { astro = { cp = 0xE6B3, role = "orange", name = "astro" } },
-            filenames  = { ["flake.nix"] = { cp = 0xF313, role = "blue", name = "nix" } },
+            extensions = { astro = { glyph = "", role = "orange", name = "astro" } },
+            filenames  = { ["flake.nix"] = { glyph = "", role = "blue", name = "nix" } },
         },
     })
 <

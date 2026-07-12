@@ -27,9 +27,15 @@ local function check_glyphs(health)
     for kind, tbl in pairs(resolve.tables()) do
         for key, spec in pairs(tbl) do
             total = total + 1
-            local w = vim.fn.strdisplaywidth(vim.fn.nr2char(spec.cp, 1))
+            local w = vim.fn.strdisplaywidth(spec.glyph or "")
             if w ~= 1 then
-                bad[#bad + 1] = ("%s/%s (%s, cp=0x%X) width=%d"):format(kind, key, spec.name or "?", spec.cp, w)
+                bad[#bad + 1] = ("%s/%s (%s, glyph=%s) width=%d"):format(
+                    kind,
+                    key,
+                    spec.name or "?",
+                    spec.glyph or "?",
+                    w
+                )
             end
         end
     end

@@ -7,13 +7,13 @@
 
 ---@type table<string, LvimIconSpec>
 return {
-    directory = { cp = 0xF07B, role = "blue", brand = "#7ebae4", name = "folder" },
-    directory_open = { cp = 0xF07C, role = "blue", brand = "#7ebae4", name = "folder-open" },
-    directory_empty = { cp = 0xF0256, role = "blue", brand = "#7ebae4", name = "folder-empty" },
-    symlink = { cp = 0xF481, role = "cyan", brand = "#56b3b4", name = "symlink" },
-    symlink_dir = { cp = 0xF0839, role = "cyan", brand = "#56b3b4", name = "symlink-dir" },
-    symlink_broken = { cp = 0xF127, role = "red", brand = "#cb4f4f", name = "symlink-broken" },
-    executable = { cp = 0xF489, role = "green", brand = "#89e051", name = "executable" },
-    file = { cp = 0xF15B, role = "fg", brand = "#6d8086", name = "file" },
-    file_empty = { cp = 0xF016, role = "fg", brand = "#6d8086", name = "file-empty" },
+    directory = { glyph = "", role = "blue", brand = "#7ebae4", name = "folder" },
+    directory_open = { glyph = "", role = "blue", brand = "#7ebae4", name = "folder-open" },
+    directory_empty = { glyph = "󰉖", role = "blue", brand = "#7ebae4", name = "folder-empty" },
+    symlink = { glyph = "", role = "cyan", brand = "#56b3b4", name = "symlink" },
+    symlink_dir = { glyph = "󰠹", role = "cyan", brand = "#56b3b4", name = "symlink-dir" },
+    symlink_broken = { glyph = "", role = "red", brand = "#cb4f4f", name = "symlink-broken" },
+    executable = { glyph = "", role = "green", brand = "#89e051", name = "executable" },
+    file = { glyph = "", role = "fg", brand = "#6d8086", name = "file" },
+    file_empty = { glyph = "", role = "fg", brand = "#6d8086", name = "file-empty" },
 }

@@ -62,11 +62,11 @@ return {
         -- brightness variant (Soft/Dark/Darker/Light) so svg icons track the theme.
         variant = nil,
     },
-    -- Returned when no filename/extension/filetype matches. `cp` is a Nerd Font codepoint;
-    -- `role` a palette slot. (A plain file glyph in the neutral foreground colour.)
-    default = { cp = 0xF15B, role = "fg", name = "default" },
+    -- Returned when no filename/extension/filetype matches. `glyph` is a real Nerd Font
+    -- character; `role` a palette slot. (A plain file glyph in the neutral foreground colour.)
+    default = { glyph = "", role = "fg", name = "default" },
     -- User additions / overrides, merged into the live data tables in setup(). Same spec
-    -- shape as the built-ins: { cp = <codepoint>, role = "<palette role>", brand = "#hex",
+    -- shape as the built-ins: { glyph = "<nerd glyph>", role = "<palette role>", brand = "#hex",
     -- name = "<icon name>" }. Keyed exactly like the data tables (lower-case ext/ft, exact
     -- filename).
     overrides = {
