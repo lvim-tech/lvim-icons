@@ -117,8 +117,9 @@ consumer can pick a mode without touching the global config (each lvim-tech plug
 ## Adding / overriding icons
 
 Add new file types or override built-ins at setup via `overrides` (or at runtime with
-`icons.override(tbl)`). The keys are lower-case extensions / filetypes and exact filenames; the
-spec is `{ glyph = "<Nerd Font glyph>", role = "<palette role>", brand = "#rrggbb", name = "<id>" }`.
+`icons.override(tbl)`). The keys are lower-case extensions / filetypes and exact filenames (and the
+`special` table is keyed by kind: directory / symlink / executable / …); the spec is
+`{ glyph = "<Nerd Font glyph>", role = "<palette role>", brand = "#rrggbb", name = "<id>" }`.
 
 ```lua
 require("lvim-icons").setup({
@@ -131,6 +132,7 @@ require("lvim-icons").setup({
             ["flake.nix"] = { glyph = "", role = "blue", brand = "#7ebae4", name = "nix" },
         },
         filetypes = {},
+        special = {}, -- kind icons: directory / symlink / executable / default
     },
 })
 ```
@@ -156,6 +158,7 @@ require("lvim-icons").setup({
         extensions = {}, -- e.g. astro = { glyph = "", role = "orange", brand = "#ff5d01", name = "astro" }
         filenames = {}, -- e.g. ["flake.nix"] = { glyph = "", role = "blue", brand = "#7ebae4", name = "nix" }
         filetypes = {},
+        special = {}, -- kind icons: directory / symlink / executable / default
     },
 })
 ```

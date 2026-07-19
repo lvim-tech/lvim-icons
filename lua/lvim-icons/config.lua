@@ -25,6 +25,7 @@
 ---@field extensions table<string, LvimIconSpec>  Extension → spec overrides/additions
 ---@field filenames  table<string, LvimIconSpec>  Full-filename → spec overrides/additions
 ---@field filetypes  table<string, LvimIconSpec>  Neovim filetype → spec overrides/additions
+---@field special    table<string, LvimIconSpec>  Kind (directory/symlink/executable/…) → spec overrides
 
 ---@class LvimIconsConfig
 ---@field mode        "font"|"svg"|"auto"  Render mode (see the module header)
@@ -73,5 +74,6 @@ return {
         extensions = {},
         filenames = {},
         filetypes = {},
+        special = {}, -- kind icons (directory / symlink / executable / …); merged like the others
     },
 }

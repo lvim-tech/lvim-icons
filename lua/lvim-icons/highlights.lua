@@ -23,6 +23,20 @@ local M = {}
 ---@type string[]
 local ROLES = { "red", "green", "blue", "cyan", "magenta", "orange", "yellow", "purple", "teal", "fg" }
 
+---@type table<string, boolean>  fast membership set for the roles above (built groups + a live colour)
+local ROLE_SET = {}
+for _, r in ipairs(ROLES) do
+    ROLE_SET[r] = true
+end
+
+--- Whether `role` is one of the defined palette roles. A spec role outside this set has no built
+--- highlight group (and `c[role]` is nil), so callers must fall back to "fg" to keep hl + color in sync.
+---@param role string
+---@return boolean
+function M.is_role(role)
+    return ROLE_SET[role] == true
+end
+
 --- Highlight group name for a palette role (e.g. "blue" → "LvimIconBlue").
 ---@param role string
 ---@return string

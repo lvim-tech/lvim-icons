@@ -23,15 +23,16 @@ local M = {}
 
 -- Terminals known to shape COLRv1 ligatures (for mode = "auto"). Matched against $TERM and a
 -- couple of terminal-specific env vars. Deliberately conservative: a false negative just
--- means font mode (safe), a false positive would leak the raw base emoji.
+-- means font mode (safe), a false positive would leak the raw base emoji. Only emulators that
+-- ACTUALLY substitute an emoji-base + variation-selector ligature belong here — Alacritty does
+-- no ligature shaping at all (upstream wontfix), and konsole/gnome-terminal (VTE) are not
+-- verified COLRv1-ligature shapers, so all three are OFF the list until proven (the user can
+-- still opt in per-terminal via config.svg.assume_supported).
 ---@type table<string, boolean>
 local KNOWN_GOOD_TERM = {
     ["xterm-kitty"] = true,
     ["wezterm"] = true,
-    ["alacritty"] = true,
     ["foot"] = true,
-    ["konsole"] = true,
-    ["gnome"] = true,
 }
 
 ---@type boolean?  cached fc-list probe result (nil = not yet probed)
@@ -69,8 +70,9 @@ function M.terminal_supported()
             return true
         end
     end
-    -- Terminal-specific env hints some emulators set even under a generic $TERM.
-    if vim.env.KITTY_WINDOW_ID or vim.env.WEZTERM_PANE or vim.env.ALACRITTY_WINDOW_ID then
+    -- Terminal-specific env hints some emulators set even under a generic $TERM. (No Alacritty hint:
+    -- it does no ligature shaping, so its presence must NOT switch auto-mode into svg.)
+    if vim.env.KITTY_WINDOW_ID or vim.env.WEZTERM_PANE then
         return true
     end
     return false

@@ -67,6 +67,11 @@ function M.materialise(spec, opts)
         color = highlights.brand_color(spec.brand, mode)
     else
         local role = spec.role or "fg"
+        -- An override spec may name a role with no palette group (e.g. "pink"): fall back to "fg" so the
+        -- highlight group (LvimIconFg) and the resolved `color` (c.fg) agree instead of silently diverging.
+        if not highlights.is_role(role) then
+            role = "fg"
+        end
         group = highlights.role_group(role)
         color = c[role] or c.fg
     end
@@ -80,7 +85,9 @@ end
 ---@return LvimIconSpec?
 local function match_extension(basename)
     local parts = vim.split(basename, ".", { plain = true })
-    -- Start at 2 so a leading dot (dotfiles) or the stem is never treated as an extension.
+    -- Start at 2 so the STEM of a normal name (`init` in `init.lua`) is never treated as an
+    -- extension. A dotfile splits to { "", "bashrc" }, so `.bashrc` DOES enter the chain as the
+    -- extension "bashrc" and `.env` resolves via T.extensions.env — intended (devicons parity).
     for i = 2, #parts do
         local ext = table.concat(parts, ".", i):lower()
         local spec = T.extensions[ext]

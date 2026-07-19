@@ -119,7 +119,9 @@ function M.override(overrides)
         return
     end
     local T = resolve.tables()
-    for _, key in ipairs({ "extensions", "filenames", "filetypes" }) do
+    -- `special` = the kind icons (directory/symlink/executable/…); mergeable too, so a user can
+    -- recolour or reglyph them without editing data files (config.default is already merge-reachable).
+    for _, key in ipairs({ "extensions", "filenames", "filetypes", "special" }) do
         if type(overrides[key]) == "table" then
             merge(T[key], overrides[key])
         end

@@ -67,7 +67,7 @@ change the render/colour mode, add overrides, or register |:LvimIcons|. >lua
             variant = nil,      -- nil = follow the active lvim-colorscheme variant
         },
         default = { glyph = "", role = "fg", name = "default" },
-        overrides = { extensions = {}, filenames = {}, filetypes = {} },
+        overrides = { extensions = {}, filenames = {}, filetypes = {}, special = {} },
     })
 <
 setup() merges user options into the live config in place (via
@@ -172,7 +172,8 @@ An override spec is: >lua
 The same shape overrides a BUILT-IN (recolour or reglyph it) or adds a new one.
 The bundled set covers ~300 extensions/filenames/filetypes; anything unmapped
 falls back to `default` — extend it here rather than editing the plugin.
-Keys are lower-case extensions / filetypes and exact filenames. Example: >lua
+Keys are lower-case extensions / filetypes and exact filenames; the `special`
+table is keyed by KIND (directory / symlink / executable / …). Example: >lua
 
     require("lvim-icons").setup({
         overrides = {

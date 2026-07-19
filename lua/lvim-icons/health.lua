@@ -11,6 +11,7 @@
 local config = require("lvim-icons.config")
 local resolve = require("lvim-icons.resolve")
 local svg = require("lvim-icons.svg")
+local highlights = require("lvim-icons.highlights")
 
 local M = {}
 
@@ -43,6 +44,31 @@ local function check_glyphs(health)
         health.ok(("all %d glyphs are single-width"):format(total))
     else
         health.warn(("%d of %d glyphs are not single-width:"):format(#bad, total))
+        for _, b in ipairs(bad) do
+            health.warn("  " .. b)
+        end
+    end
+end
+
+--- Audit every spec's `role` against the defined palette roles. An unknown role (only reachable via
+--- a user override) renders through a cleared highlight group, so its `hl` consumer shows the icon
+--- invisible while `color` falls back to fg — the two disagree. resolve now normalises to "fg", but a
+--- warning tells the user their override role was not honoured as written.
+---@param health table  the vim.health reporter
+---@return nil
+local function check_roles(health)
+    local bad = {}
+    for kind, tbl in pairs(resolve.tables()) do
+        for key, spec in pairs(tbl) do
+            if type(spec.role) == "string" and not highlights.is_role(spec.role) then
+                bad[#bad + 1] = ("%s/%s role=%q"):format(kind, key, spec.role)
+            end
+        end
+    end
+    if #bad == 0 then
+        health.ok("all icon roles resolve to a palette group")
+    else
+        health.warn(("%d spec(s) name an unknown role (rendered as fg):"):format(#bad))
         for _, b in ipairs(bad) do
             health.warn("  " .. b)
         end
@@ -132,6 +158,7 @@ function M.check()
     check_deps(health)
     check_config(health)
     check_glyphs(health)
+    check_roles(health)
     check_svg(health)
 end
 
