@@ -12,11 +12,8 @@ return {
     help = { glyph = "", role = "green", brand = "#77aa99", name = "help" },
     qf = { glyph = "󰻟", role = "blue", brand = "#519aba", name = "quickfix" },
     checkhealth = { glyph = "", role = "red", brand = "#cb4f4f", name = "health" },
-    lazy = { glyph = "󰺦", role = "purple", brand = "#a074c4", name = "plugins" },
     gitcommit = { glyph = "", role = "orange", brand = "#f14e32", name = "git" },
     gitrebase = { glyph = "", role = "orange", brand = "#f14e32", name = "git" },
-    NvimTree = { glyph = "", role = "blue", brand = "#519aba", name = "folder" },
-    TelescopePrompt = { glyph = "", role = "blue", brand = "#519aba", name = "search" },
     terminal = { glyph = "", role = "green", brand = "#89e051", name = "terminal" },
 
     -- ── Language filetypes not covered by an extension key ─────────────────────
