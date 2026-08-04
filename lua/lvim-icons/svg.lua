@@ -138,6 +138,7 @@ function M.sequence(name)
         return nil
     end
     -- Prefer the active variant's sequence; fall back to the entry's base `seq`.
+    ---@type integer[]
     local seq = (entry.variants and entry.variants[M.variant()]) or entry.seq
     if type(seq) ~= "table" or #seq == 0 then
         return nil
