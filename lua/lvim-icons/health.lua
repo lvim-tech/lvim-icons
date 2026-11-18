@@ -2,8 +2,8 @@
 -- Reports the things that make an icon provider misbehave invisibly: a glyph that is not
 -- single-width (breaks every consumer's column alignment), an invalid config value, a missing
 -- hard dependency (lvim-utils) or the optional gallery dependency (lvim-ui), and — for svg
--- mode — whether the COLRv1 font is actually installed, whether the terminal is on the
--- known-good shaping allowlist, and which render mode is therefore ACTIVE and why.
+-- mode — whether lvim-image is there, whether the terminal shows kitty unicode placeholders,
+-- the cell size the images are drawn for, and which render mode is therefore ACTIVE and why.
 -- Read-only: it never mutates config or state.
 --
 ---@module "lvim-icons.health"
@@ -16,7 +16,7 @@ local highlights = require("lvim-icons.highlights")
 local M = {}
 
 ---@type table<string, boolean>
-local VALID_MODE = { font = true, svg = true, auto = true }
+local VALID_MODE = { nerd = true, mix = true, material = true }
 ---@type table<string, boolean>
 local VALID_COLOR_MODE = { theme = true, brand = true, theme_brand = true }
 
@@ -82,12 +82,20 @@ local function check_config(health)
     if VALID_MODE[config.mode] then
         health.ok(("mode = %q"):format(config.mode))
     else
-        health.error(("mode = %q is invalid (font|svg|auto)"):format(tostring(config.mode)))
+        health.error(("mode = %q is invalid (nerd|mix|material)"):format(tostring(config.mode)))
     end
     if VALID_COLOR_MODE[config.color_mode] then
         health.ok(("color_mode = %q"):format(config.color_mode))
     else
         health.error(("color_mode = %q is invalid (theme|brand|theme_brand)"):format(tostring(config.color_mode)))
+    end
+    for _, kind in ipairs({ "font", "image" }) do
+        local v = config.placement and config.placement[kind]
+        if v == "real" or v == "virtual" then
+            health.ok(("placement.%s = %q"):format(kind, v))
+        else
+            health.error(("placement.%s = %q is invalid (real|virtual)"):format(kind, tostring(v)))
+        end
     end
     if type(config.brand_blend) ~= "number" or config.brand_blend < 0 or config.brand_blend > 1 then
         health.warn(("brand_blend = %s should be a number in 0..1"):format(tostring(config.brand_blend)))
@@ -114,39 +122,68 @@ end
 ---@param health table  the vim.health reporter
 ---@return nil
 local function check_svg(health)
-    local active = svg.active_mode()
-    if config.mode == "font" then
-        health.info("render mode: font (svg not requested)")
+    if svg.mode() == "nerd" then
+        health.info("render mode: nerd (every icon a Nerd glyph, as text — no images)")
         return
     end
-
-    local font = svg.font_installed(true)
-    if font then
-        health.ok(("svg font %q is installed (fc-list)"):format(config.svg.font_family))
+    local ok_t, terminal = pcall(require, "lvim-image.terminal")
+    if not ok_t then
+        health.warn("lvim-image not found — icons are drawn as images through it, so every icon stays a glyph")
+        return
+    end
+    health.ok("lvim-image found")
+    local ok_c, caps = pcall(terminal.capabilities)
+    if ok_c and type(caps) == "table" and caps.placeholders then
+        health.ok("the terminal shows kitty unicode placeholders")
     else
         health.warn(
-            ("svg font %q not found via fc-list — svg falls back to font mode"):format(config.svg.font_family)
+            "the terminal does not show kitty unicode placeholders (kitty / Ghostty; inside tmux or zellij set "
+                .. "lvim-image's tmux_placeholders / zellij_placeholders where they pass them) — Nerd glyphs are used"
         )
     end
-
-    if config.svg.assume_supported then
-        health.info("terminal: assume_supported = true (allowlist skipped)")
-    elseif svg.terminal_supported() then
-        health.ok(("terminal %q is on the COLRv1 shaping allowlist"):format(vim.env.TERM or "?"))
+    local image = require("lvim-icons.image")
+    local geo = image.geometry()
+    if geo then
+        health.ok(("icons drawn %dx%d px in a %dx%d canvas (cell %dx%d, svg.fill = %s)"):format(
+            geo.size, geo.size, geo.w, geo.h, geo.cw, geo.ch, tostring(config.svg.fill)
+        ))
     else
-        health.info(
-            ("terminal %q is not on the shaping allowlist — set svg.assume_supported if it does shape COLRv1"):format(
-                vim.env.TERM or "?"
-            )
-        )
+        health.warn("the terminal cell size is unknown — images cannot be sized")
     end
-
-    if active == "svg" then
-        health.ok(("active render mode: svg (variant %q)"):format(svg.variant()))
+    local material = require("lvim-icons.material")
+    if not material.available() then
+        health.error("assets/material/material-icons.json is missing or unreadable — run scripts/update-material.sh")
+        return
+    end
+    local ids, missing = material.ids(), {}
+    for _, id in ipairs(ids) do
+        if not svg.find(id) then
+            missing[#missing + 1] = id
+        end
+    end
+    local f = io.open(material.DIR .. "/VERSION", "r")
+    local version = f and vim.trim(f:read("*a")) or "?"
+    if f then
+        f:close()
+    end
+    if #missing == 0 then
+        health.ok(("Material Icon Theme %s: every icon has its SVG (%d)"):format(version, #ids))
     else
-        health.warn(
-            ("active render mode: font (requested %q, but the svg preconditions are not met)"):format(config.mode)
-        )
+        health.warn(("no SVG file for: %s (they keep their font glyph)"):format(table.concat(missing, ", ")))
+    end
+    if svg.mode() == "material" then
+        local nerd = vim.fn.glob(svg.NERD .. "/*.svgz", false, true)
+        if #nerd > 0 then
+            health.ok(("Nerd glyph SVGs for the UI icons: %d (assets/nerd)"):format(#nerd))
+        else
+            health.warn("no Nerd glyph SVGs in assets/nerd — UI icons stay glyphs; run scripts/update-nerd.sh")
+        end
+    end
+    local active = svg.active_mode()
+    if active ~= "nerd" then
+        health.ok(("active render mode: %s (%d images sent)"):format(active, require("lvim-icons.placeholders").count()))
+    else
+        health.warn(("active render mode: nerd — %s asked for, but the terminal cannot show images"):format(svg.mode()))
     end
 end
 

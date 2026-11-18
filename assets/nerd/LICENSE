@@ -1,0 +1,18 @@
+The SVGs in this directory are the glyphs of Symbols Nerd Font (Nerd Fonts, https://github.com/ryanoasis/nerd-fonts,
+version in ./VERSION), extracted one file per codepoint by scripts/update-nerd.sh. Nerd Fonts is distributed under
+the MIT licence; the glyphs themselves come from the icon sets it collects, each under its own licence:
+
+  Font Awesome            CC BY 4.0 (icons), SIL OFL 1.1 (font)   https://fontawesome.com
+  Material Design Icons   Apache License 2.0                      https://pictogrammers.com
+  Codicons                CC BY 4.0                               https://github.com/microsoft/vscode-codicons
+  Octicons                MIT                                     https://github.com/primer/octicons
+  Devicons                MIT                                     https://github.com/vorillaz/devicons
+  Seti-UI                 MIT                                     https://github.com/jesseweed/seti-ui
+  Font Logos              The Unlicense                           https://github.com/lukas-w/font-logos
+  Powerline Symbols       MIT                                     https://github.com/powerline/powerline
+  Pomicons                SIL OFL 1.1                             https://github.com/gabrielelana/pomicons
+  Weather Icons           SIL OFL 1.1                             https://github.com/erikflowers/weather-icons
+  IEC Power Symbols       MIT                                     https://unicodepowersymbol.com
+
+See the Nerd Fonts licence audit for the authoritative list:
+https://github.com/ryanoasis/nerd-fonts/blob/master/license-audit.md

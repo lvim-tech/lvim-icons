@@ -5,21 +5,26 @@
 -- this table live — no snapshots — so a control-center toggle takes effect with no
 -- restart.
 --
--- Two render modes live behind one resolver:
---   • "font" (default) — a single-width Nerd Font glyph + a palette-derived highlight
---     group. Colors track the live theme.
---   • "svg"            — full-colour COLRv1 vector glyphs shaped by the terminal from an
---     emoji-base + variation-selector ligature (see svg.lua). Falls back to "font" per
---     icon when no svg mapping exists, and wholesale when the font is not installed.
---   • "auto"           — "svg" only when the font is installed AND the terminal is on the
---     known-good allowlist; otherwise "font".
+-- Three render modes:
+--   • "nerd" (default) — every icon a single-width Nerd Font glyph, as text, + a palette-derived
+--     highlight group (colours track the live theme).
+--   • "mix"            — file / folder icons as Material Icon Theme images (1:1 with VS Code), two
+--     cells wide, through kitty unicode placeholders (see svg.lua); UI icons stay Nerd glyphs.
+--   • "material"       — file / folder icons as in "mix"; the UI icons as images of their own Nerd
+--     glyph, in their owner's colour (see ui.lua).
+--   Images only where the terminal shows them; anywhere else every icon is its Nerd glyph, as text.
 --
 ---@module "lvim-icons.config"
 
 ---@class LvimIconsSvgConfig
----@field font_family      string   Font family name probed with `fc-list` (must match the shipped font)
----@field assume_supported boolean  Skip the terminal allowlist — the user vouches their terminal shapes COLRv1 ligatures
----@field variant          string?  Force a theme variant ("soft"|"dark"|"darker"|"light"); nil = follow lvim-colorscheme
+---@field dir  string?  A directory of your own SVGs, searched before the bundled assets/material/ (same file names)
+---@field fill number   The icon square as a fraction of the cell height (capped by the 2-cell width)
+---@field guide_px integer  the thickness of a tree guide line image, in pixels
+---@field cell_em number    the terminal font's cell width in ems (where a guide under a Nerd glyph goes)
+
+---@class LvimIconsPlacement
+---@field font  "real"|"virtual"  a Nerd Font glyph
+---@field image "real"|"virtual"  an svg-mode image
 
 ---@class LvimIconsOverrides
 ---@field extensions table<string, LvimIconSpec>  Extension → spec overrides/additions
@@ -28,20 +33,22 @@
 ---@field special    table<string, LvimIconSpec>  Kind (directory/symlink/executable/…) → spec overrides
 
 ---@class LvimIconsConfig
----@field mode        "font"|"svg"|"auto"  Render mode (see the module header)
+---@field mode        "nerd"|"mix"|"material"  Render mode (see the module header)
 ---@field color_mode  "theme"|"brand"|"theme_brand"  Icon colour source (see the value comment below)
 ---@field brand_blend number               theme_brand: how much of the brand hue to keep (1.0 = raw brand, 0.0 = theme bg)
 ---@field svg         LvimIconsSvgConfig    svg-mode options
+---@field placement   LvimIconsPlacement    how buffer views put an icon on a line, per kind of icon
 ---@field default     LvimIconSpec         The spec returned when nothing matches
 ---@field overrides   LvimIconsOverrides   User additions / overrides merged into the live data tables at setup
 
 ---@type LvimIconsConfig
 return {
-    -- Render mode. "font" is the portable default (works in every terminal); "svg" needs
-    -- the shipped COLRv1 font + a shaping-capable terminal (see svg.lua / :checkhealth);
-    -- "auto" resolves to "svg" only when both hold, else "font".
-    mode = "font",
-    -- Icon colour source (font mode):
+    -- Render mode: "nerd" (every icon a Nerd glyph, as text — the portable default), "mix" (file /
+    -- folder icons as Material images, the rest Nerd glyphs) or "material" (file / folder icons Material,
+    -- UI icons images of their Nerd glyph). Images need lvim-image and a terminal that shows kitty
+    -- unicode placeholders (see svg.lua / :checkhealth); everywhere else icons are Nerd glyphs.
+    mode = "nerd",
+    -- Icon colour source (Nerd glyphs; also the image recolouring — see recolor.lua):
     --   "brand"       — the icon's REAL upstream brand colour, verbatim — INDEPENDENT of the
     --                   theme (the classic nvim-web-devicons look). THE DEFAULT.
     --   "theme"       — each icon takes a palette ROLE colour (blue/green/red/…). Self-theming:
@@ -54,14 +61,27 @@ return {
     -- values pull it toward the editor background. (Ignored by "theme" and "brand".)
     brand_blend = 0.7,
     svg = {
-        -- The font family the shipped COLRv1 glyphs live in; probed once with `fc-list`.
-        font_family = "LvimIcons",
-        -- Set true when you KNOW your terminal shapes COLRv1 ligatures (kitty/WezTerm/…)
-        -- but it is not on the built-in allowlist — skips the $TERM check for "auto".
-        assume_supported = false,
-        -- Force a theme-variant glyph set. nil follows the active lvim-colorscheme
-        -- brightness variant (Soft/Dark/Darker/Light) so svg icons track the theme.
-        variant = nil,
+        -- A directory of your own SVGs (e.g. a licensed icon set), searched before the bundled ones:
+        -- `<material id>.svg` (`rust.svg`, `folder-git.svg`), `nerd/<CODEPOINT>.svg`.
+        dir = nil,
+        -- The icon: the icon square as a fraction of the cell HEIGHT, drawn centred in its two cells (capped
+        -- by their width). 0.72 leaves a margin above and below, so icons on adjacent lines do not touch.
+        fill = 0.72,
+        -- "material": the thickness of a tree guide line (drawn as an image under the icons), in pixels.
+        guide_px = 2,
+        -- The terminal font's cell width as a fraction of its em (0.6 for most coding fonts): a guide line under
+        -- a Nerd glyph is drawn at the glyph's own middle, which the terminal places at this scale.
+        cell_em = 0.6,
+    },
+    -- How a BUFFER view (a file tree, a picker list) puts an icon on a line, per kind of icon:
+    --   "virtual" — inline virtual text (an extmark): drawn in place, but not part of the buffer text — the
+    --               cursor skips it, and it never ends up in a yank, a search or an edit.
+    --   "real"    — the icon is text of the line, as icons always were.
+    -- Status bars, winbars and tab lines have no extmarks and no cursor: there the icon is always text.
+    -- (lvim-utils.icons.text / .mark apply this for a consumer.)
+    placement = {
+        font = "real",
+        image = "virtual",
     },
     -- Returned when no filename/extension/filetype matches. `glyph` is a real Nerd Font
     -- character; `role` a palette slot. (A plain file glyph in the neutral foreground colour.)

@@ -1,12 +1,13 @@
 -- lvim-icons: the single icon provider for the lvim-tech set — filename / extension /
 -- filetype / filesystem-kind → { glyph, hl, color, width }. A curated Nerd Font data set
 -- whose colours come from the LIVE lvim-utils palette (not hardcoded per icon), with a second
--- render mode (svg) that emits COLRv1 colour-font ligatures for terminals that shape them
--- (see svg.lua), auto-falling back to font mode. Every other lvim-tech plugin resolves its
--- file/ft icons here (soft dependency: consumers pcall-require and degrade to one glyph).
+-- render mode (svg) that draws each icon from its SVG as a small terminal image through kitty
+-- unicode placeholders (see svg.lua), falling back to nerd mode where the terminal cannot show
+-- them. Every other lvim-tech plugin resolves its file/ft icons here (soft dependency: consumers
+-- pcall-require and degrade to one glyph).
 --
--- The resolver returns `width` from day one (1 in font mode, 2 in svg mode) so every consumer
--- aligns columns from it and is svg-ready without a change. Colours self-theme: the role
+-- The resolver returns `width` (1 for a font glyph, 2 for an image) so every consumer aligns
+-- columns from it, and `image` so it knows the icon must be painted through its `hl`. Colours self-theme: the role
 -- groups and any brand groups re-derive on ColorScheme / palette sync via the bound factories.
 --
 --   require("lvim-icons").get("init.lua")              -- → { glyph, hl, color, width, name }
@@ -33,10 +34,11 @@ local registered = false
 --- Resolve an icon for a path or bare filename through the full lookup chain
 --- (filename → extension → filetype → default). Always returns a renderable result.
 ---@param name string  a path or bare filename
----@param opts { filetype?: string, kind?: string, color_mode?: string }?  filetype/kind hints; a per-call colour-mode override ("theme"|"brand"|"theme_brand")
+---@param opts { filetype?: string, kind?: string, color_mode?: string, font?: boolean }?  filetype/kind hints; a per-call colour-mode override ("theme"|"brand"|"theme_brand"); `font = true` → always the font glyph (for a caller that paints the icon in a colour of its own)
 ---@return LvimIconResult
 function M.get(name, opts)
-    return resolve.materialise(resolve.spec_for(name, opts), opts)
+    local target = { name = name, filetype = opts and opts.filetype, kind = opts and opts.kind }
+    return resolve.materialise(resolve.spec_for(name, opts), opts, target)
 end
 
 --- Direct extension lookup (no chain), e.g. `by_extension("tsx")`.
@@ -71,6 +73,23 @@ function M.by_kind(kind, opts)
     return resolve.by_kind(kind, opts)
 end
 
+--- A UI icon (not a file / folder) for the caller's Nerd `opts.glyph`: in "material" mode an image of that
+--- glyph filled with the colour of `opts.hl` (or `opts.color`); otherwise the glyph and group as given.
+--- See lvim-icons.ui.
+---@param opts { glyph: string, hl?: string, color?: string }
+---@return LvimIconResult
+function M.ui(opts)
+    return require("lvim-icons.ui").get(opts)
+end
+
+--- A tree guide line as an image (centred under a 2-cell icon, full cell height), in the colour of `opts.hl`,
+--- in every mode where the terminal shows images; nil otherwise. See lvim-icons.ui.guide.
+---@param opts { hl?: string, color?: string }
+---@return LvimIconResult?
+function M.guide(opts)
+    return require("lvim-icons.ui").guide(opts)
+end
+
 --- Every icon, materialised — for consumers building their own gallery/audit.
 ---@return LvimIconResult[]
 function M.all()
@@ -84,9 +103,9 @@ function M.all()
     return out
 end
 
---- The effective render mode after fallback resolution ("font" or "svg"). For consumers /
+--- The effective render mode after fallback resolution ("nerd", "mix" or "material"). For consumers /
 --- health that need to know what is actually being emitted.
----@return "font"|"svg"
+---@return "nerd"|"mix"|"material"
 function M.active_mode()
     return svg.active_mode()
 end
@@ -172,6 +191,9 @@ function M.setup(opts)
         merge(config, opts)
     end
     M.override(config.overrides)
+    -- `svg.dir` / `svg.fill` may have changed: resolve the SVG paths and the image size again
+    svg.reset()
+    require("lvim-icons.image").invalidate()
 
     if registered then
         return
@@ -182,6 +204,9 @@ function M.setup(opts)
     hl.setup()
     hl.bind(highlights.build)
     hl.bind(highlights.build_brands)
+    -- image modes: the image-id groups survive veils and :colorscheme; a font change redraws the images
+    require("lvim-icons.placeholders").setup()
+    svg.setup() -- image modes: recolour the images when the theme changes
 
     vim.api.nvim_create_user_command("LvimIcons", function()
         M.gallery()

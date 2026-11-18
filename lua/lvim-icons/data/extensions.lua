@@ -9,7 +9,7 @@
 ---@module "lvim-icons.data.extensions"
 
 ---@class LvimIconSpec
----@field glyph string   Nerd Font glyph (font mode)
+---@field glyph string   Nerd Font glyph (nerd mode)
 ---@field role  string   Palette role slot (blue/green/red/cyan/magenta/orange/yellow/purple/teal/fg)
 ---@field brand string?  Upstream brand hex (#rrggbb) — used only in color_mode = "brand"
 ---@field name  string   Stable icon id (svg-overlay key + gallery label)

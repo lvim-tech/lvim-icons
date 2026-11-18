@@ -5,15 +5,20 @@ filesystem kind to a renderable icon `{ glyph, hl, color, width }`. Colours are 
 file type in its **real brand colour** (the default), or driven from the **live lvim-utils
 palette** so icons follow the active theme, or a blend of the two (see [Colours](#colours)).
 
-Two render modes behind one resolver:
+Three render modes:
 
-- **font** (default) — a single-width Nerd Font glyph + a palette-derived highlight group. Works in
-  every terminal.
-- **svg** — full-colour **COLRv1** vector glyphs, emitted as a plain-text ligature (an emoji base +
-  Unicode variation selectors) that a shaping-capable terminal substitutes with the coloured glyph.
-  Because it is plain text it works everywhere text does — statuslines, trees, even a fuzzy-finder
-  TUI. Falls back to font mode automatically when the font is not installed (and per-icon when an
-  icon has no svg mapping yet).
+- **nerd** (default) — every icon a single-width Nerd Font glyph, as text, with a palette-derived
+  highlight group. Works in every terminal.
+- **mix** — file and folder icons as small full-colour terminal **images**, exactly the ones VS Code
+  shows with the [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme)
+  (its own manifest picks them); every other (UI) icon its Nerd glyph, as text.
+- **material** — file and folder icons as in `mix`; the UI icons (branches, diagnostics, panel titles…)
+  as images too: each the SVG of the very Nerd glyph the plugin uses (extracted from Symbols Nerd Font),
+  in the colour the plugin gives it.
+
+An image is two cells wide and goes through kitty **unicode placeholders**: sent once, it is then two
+placeholder cells of text, so it goes wherever text goes — buffers, floats, statuslines, tab lines. Where
+the terminal cannot show images, every icon is its Nerd glyph as text, whatever the mode.
 
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](https://github.com/lvim-tech/lvim-icons/blob/main/LICENSE)
 
@@ -21,8 +26,10 @@ Two render modes behind one resolver:
 
 Requires **Neovim >= 0.10** and [lvim-utils](https://github.com/lvim-tech/lvim-utils) (the palette +
 highlight engine). [lvim-ui](https://github.com/lvim-tech/lvim-ui) is optional — it powers the
-`:LvimIcons` gallery. svg mode additionally needs the shipped COLRv1 font installed and a terminal
-that shapes COLRv1 ligatures (kitty, WezTerm, Alacritty, foot, Konsole, GNOME Terminal).
+`:LvimIcons` gallery. Icons as images additionally need [lvim-image](https://github.com/lvim-tech/lvim-image)
+(libvips draws the SVGs) and a terminal that shows kitty unicode placeholders: kitty or Ghostty —
+inside tmux or zellij only when they pass them through (lvim-image's `tmux_placeholders` /
+`zellij_placeholders`; a stock zellij 0.46 does not).
 
 ## Installation
 
@@ -60,7 +67,8 @@ local r = icons.get("src/main.rs") --  { glyph = "", hl = "LvimIconOrange", colo
 -- Paint it with the highlight group (preferred):
 --   nvim_buf_set_extmark(..., { virt_text = { { r.glyph, r.hl } } })
 -- Or use r.color for manual painting (fzf ANSI, statusline chunks).
--- ALWAYS pad columns from r.width (1 in font mode, 2 in svg mode) — never assume 1.
+-- ALWAYS pad columns from r.width (1 for a font glyph, 2 for an image) — never assume 1.
+-- An image (r.image == true) can only be painted through r.hl: its colour IS the image id.
 
 icons.get(path, { filetype = ft }) -- filetype hint when the name is weak (help, qf, terminal…)
 icons.get(path, { kind = "directory" }) -- a filesystem kind: directory[_open]/symlink/executable/…
@@ -87,15 +95,25 @@ the unnamed and `+` registers — handy when authoring another plugin's UI.
 
 `mode` selects how glyphs are emitted:
 
-- `"font"` — Nerd Font glyphs (portable default).
-- `"svg"` — COLRv1 ligatures when the font is installed, else font mode (a health warning explains).
-- `"auto"` — svg only when the font is installed **and** the terminal is on the known-good shaping
-  allowlist; otherwise font. Set `svg.assume_supported = true` to vouch for a terminal that shapes
-  COLRv1 but is not on the allowlist.
+- `"nerd"` — every icon a Nerd glyph, as text (default).
+- `"mix"` — file / folder icons as Material Icon Theme images, UI icons as Nerd glyphs.
+- `"material"` — file / folder icons as in `mix`, UI icons as images of their own Nerd glyph.
 
-Terminal COLRv1 shaping cannot be detected at runtime (no terminal advertises it), so `auto` stays
-conservative and `:checkhealth lvim-icons` reports the font/terminal state and the **active** mode.
-In svg mode glyphs are two cells wide — always align columns from the returned `width`.
+Images need a terminal that shows kitty unicode placeholders; anywhere else the icons are Nerd glyphs as
+text (a health warning explains). A plugin asks for a UI icon with its own glyph and colour group —
+
+```lua
+require("lvim-utils.icons").ui({ glyph = "", hl = "MyPluginGit" })
+```
+
+— and gets them back unchanged in `nerd` / `mix`, or in `material` an image of that glyph filled with that
+group's colour (re-filled on a theme change).
+
+Each image is drawn into the exact pixels of its two cells (`svg.fill` sets the icon size as a
+fraction of the cell height) and redrawn under the same id when the cell size changes. An icon image
+is two cells wide — always align columns from the returned `width` — and its highlight group's
+foreground is the image id, so it is kept out of backdrop dimming and re-asserted on `:colorscheme`.
+`:checkhealth lvim-icons` reports the terminal state, the image size and the **active** mode.
 
 ## Colours
 
@@ -145,13 +163,12 @@ extend it here rather than editing the plugin.
 
 ```lua
 require("lvim-icons").setup({
-    mode = "font", -- "font" | "svg" | "auto"
+    mode = "nerd", -- "nerd" | "mix" | "material"
     color_mode = "brand", -- "brand" (real per-type colours) | "theme" | "theme_brand"
     brand_blend = 0.7, -- theme_brand: keep this much brand hue (1.0 = raw, 0.0 = theme bg)
     svg = {
-        font_family = "LvimIcons", -- fc-list probe target
-        assume_supported = false, -- skip the terminal allowlist (your terminal shapes COLRv1)
-        variant = nil, -- nil = follow the active lvim-colorscheme variant
+        dir = nil, -- your own SVGs, searched before the bundled Material set (same file names)
+        fill = 0.72, -- the icon as a fraction of the cell height, centred in its two cells
     },
     default = { glyph = "", role = "fg", name = "default" },
     overrides = {
@@ -171,7 +188,9 @@ colorscheme or your own `setup`:
 `LvimIconRed`, `LvimIconGreen`, `LvimIconBlue`, `LvimIconCyan`, `LvimIconMagenta`, `LvimIconOrange`,
 `LvimIconYellow`, `LvimIconPurple`, `LvimIconTeal`, `LvimIconFg`.
 
-Brand mode additionally creates `LvimIconBrand_<hex>` groups on demand.
+Brand mode additionally creates `LvimIconBrand_<hex>` groups on demand. In the image modes every image icon has
+its own `LvimIconImg_<name>` group; its foreground is the terminal image id, not a colour — never relink
+or recolour it.
 
 ## Health
 
@@ -179,6 +198,20 @@ Brand mode additionally creates `LvimIconBrand_<hex>` groups on demand.
 :checkhealth lvim-icons
 ```
 
-Reports dependency presence, config validity, a single-width audit of every glyph, and — for svg
-mode — whether the font is installed, whether the terminal is known-good, and the resulting active
-render mode.
+Reports dependency presence, config validity, a single-width audit of every glyph, and — for the
+image modes — lvim-image, whether the terminal shows unicode placeholders, the image size, any mapped icon
+without its SVG, and the resulting active render mode.
+
+## Credits
+
+The file / folder icons in `assets/material/` are from the
+[Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) (v5.40.0),
+© Material Extensions, under the MIT licence — see `assets/material/LICENSE`. The theme's own manifest
+(`assets/material/material-icons.json`, the file VS Code reads) decides which icon a file or folder gets, so
+they match VS Code 1:1; `scripts/update-material.sh [version]` refreshes the bundle. A directory of your own
+SVGs (`svg.dir`) takes precedence by icon id (`rust.svg`, `folder-git-open.svg`, …).
+
+
+The UI icons of `material` mode in `assets/nerd/` are the glyphs of Symbols Nerd Font ([Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)),
+one compressed SVG per codepoint; each comes from an icon set with its own licence — see
+`assets/nerd/LICENSE`. `scripts/update-nerd.sh [font.ttf]` extracts them again from a newer font.
