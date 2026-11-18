@@ -54,6 +54,9 @@ function M.get(opts)
     end
     local path = svg.nerd_path(glyph)
     if not path then
+        -- no SVG for it (not a Nerd glyph): it stays text, but beside 2-cell images it should take two cells
+        -- too, so a caller can pad it and keep its column (lvim-utils.icons.ui_text does)
+        font.pad = true
         return font
     end
     local key = ("ui:%X|%s"):format(vim.fn.char2nr(glyph), opts.color or opts.hl or "")
