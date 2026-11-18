@@ -78,3 +78,28 @@ it("nerd mode never draws an image, even where the terminal could", function()
     eq(false, require("lvim-icons").ui({ glyph = "", hl = "Directory" }).image)
     config.mode, placeholders.available = saved, orig
 end)
+
+describe("lvim-icons.set_mode")
+
+it("switches the mode live and tells every view", function()
+    local li = require("lvim-icons")
+    local seen
+    local id = vim.api.nvim_create_autocmd("User", {
+        pattern = "LvimIconsMode",
+        callback = function(e)
+            seen = e.data
+        end,
+    })
+    li.set_mode("nerd")
+    eq(true, li.set_mode("material"))
+    eq("material", li.mode())
+    eq("material", seen and seen.mode)
+    eq("nerd", seen and seen.previous)
+    seen = nil
+    eq(true, li.set_mode("material"), "the same mode")
+    eq(nil, seen, "no event when nothing changed")
+    eq(false, li.set_mode("svg"), "an unknown mode is refused")
+    eq("material", li.mode())
+    li.set_mode("nerd")
+    vim.api.nvim_del_autocmd(id)
+end)

@@ -216,6 +216,12 @@ table is keyed by KIND (directory / symlink / executable / …). Example: >lua
     Confirming a row yanks its glyph to the unnamed and "+" registers — handy
     when authoring another plugin's UI. Registered by setup() (needs lvim-ui).
 
+:LvimIcons mode {nerd|mix|material}                       *:LvimIcons-mode*
+    Switch the render mode live, without a restart (no argument: show the
+    current one). Same as `require("lvim-icons").set_mode(mode)`, which fires
+    `User LvimIconsMode` (data = { mode, previous }); lvim-ui panels, the
+    lvim-hud bars and the lvim-tech plugins draw their icons again on it.
+
 ==============================================================================
 9. HIGHLIGHTS                                        *lvim-icons-highlights*
 

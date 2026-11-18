@@ -180,6 +180,36 @@ function M.gallery()
     })
 end
 
+-- ── live mode switch ─────────────────────────────────────────────────────────
+
+local MODES = { nerd = true, mix = true, material = true }
+
+--- The configured render mode.
+---@return "nerd"|"mix"|"material"
+function M.mode()
+    return svg.mode()
+end
+
+--- Switch the render mode LIVE — no restart: every icon asked for from now on follows it, and
+--- `User LvimIconsMode` (data = { mode, previous }) tells every view to draw its icons again. lvim-ui panels,
+--- the bars and the lvim-tech plugins listen to it.
+---@param mode "nerd"|"mix"|"material"
+---@return boolean ok
+function M.set_mode(mode)
+    if not MODES[mode] then
+        vim.notify(("lvim-icons: unknown mode %q (nerd | mix | material)"):format(tostring(mode)), vim.log.levels.WARN)
+        return false
+    end
+    local previous = svg.mode()
+    if previous == mode then
+        return true
+    end
+    config.mode = mode
+    vim.api.nvim_exec_autocmds("User", { pattern = "LvimIconsMode", data = { mode = mode, previous = previous } })
+    vim.cmd("redrawstatus! | redrawtabline")
+    return true
+end
+
 -- ── setup ────────────────────────────────────────────────────────────────────
 
 --- Merge user options into the live config, apply overrides, bind the self-theming highlight
@@ -208,9 +238,30 @@ function M.setup(opts)
     require("lvim-icons.placeholders").setup()
     svg.setup() -- image modes: recolour the images when the theme changes
 
-    vim.api.nvim_create_user_command("LvimIcons", function()
+    -- `:LvimIcons` opens the gallery; `:LvimIcons mode {nerd|mix|material}` switches the mode live
+    vim.api.nvim_create_user_command("LvimIcons", function(o)
+        if o.fargs[1] == "mode" then
+            if o.fargs[2] then
+                M.set_mode(o.fargs[2])
+            else
+                vim.notify("lvim-icons: mode = " .. svg.mode())
+            end
+            return
+        end
         M.gallery()
-    end, { desc = "lvim-icons: open the icon gallery" })
+    end, {
+        nargs = "*",
+        desc = "lvim-icons: open the icon gallery, or `mode <nerd|mix|material>` to switch the mode",
+        complete = function(_, line)
+            if line:match("^%S+%s+mode%s+%S*$") then
+                return { "nerd", "mix", "material" }
+            end
+            if line:match("^%S+%s+%S*$") then
+                return { "mode" }
+            end
+            return {}
+        end,
+    })
 end
 
 return M

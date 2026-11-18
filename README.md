@@ -99,6 +99,11 @@ the unnamed and `+` registers — handy when authoring another plugin's UI.
 - `"mix"` — file / folder icons as Material Icon Theme images, UI icons as Nerd glyphs.
 - `"material"` — file / folder icons as in `mix`, UI icons as images of their own Nerd glyph.
 
+The mode can be switched **live**, without a restart — `:LvimIcons mode material` (completes the three
+modes) or `require("lvim-icons").set_mode("mix")`. It fires `User LvimIconsMode` (`data = { mode, previous }`):
+lvim-ui panels, the lvim-hud bars and the lvim-tech plugins draw their icons again on it. The LVIM Control
+Center has it as **Appearance → Icons** (saved, applied again on startup).
+
 Images need a terminal that shows kitty unicode placeholders; anywhere else the icons are Nerd glyphs as
 text (a health warning explains). A plugin asks for a UI icon with its own glyph and colour group —
 
