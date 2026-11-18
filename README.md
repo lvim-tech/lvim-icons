@@ -115,6 +115,22 @@ is two cells wide — always align columns from the returned `width` — and its
 foreground is the image id, so it is kept out of backdrop dimming and re-asserted on `:colorscheme`.
 `:checkhealth lvim-icons` reports the terminal state, the image size and the **active** mode.
 
+### Tree guide lines
+
+`require("lvim-icons").guide({ hl = "MyTreeGuide", under = icon })` gives the vertical line a tree draws under
+an open folder as an image, in **every** mode where images can be shown (nil elsewhere: keep a text line). It
+is two cells wide with a `svg.guide_px` line over the full cell height, so consecutive rows join. `under` is the
+icon it runs under: an image is centred in its two cells, so the line goes down their middle; a Nerd glyph is
+drawn by the terminal from the cell's left edge, so the line goes under the glyph's own ink centre, read from
+`assets/nerd/metrics.json` and scaled by `svg.cell_em`.
+
+### A glyph with no SVG
+
+In `material` a glyph that has no Nerd SVG (a symbol outside the Nerd ranges) stays text. `ui()` marks it with
+`pad = true`, so a caller can give it the two cells an image takes and keep its column —
+`require("lvim-utils.icons").ui_text()` does this. Prefer Nerd glyphs for UI icons: every lvim-tech plugin
+uses them, so every icon can be an image.
+
 ## Colours
 
 `color_mode` selects where an icon's colour comes from — three modes:
@@ -169,6 +185,14 @@ require("lvim-icons").setup({
     svg = {
         dir = nil, -- your own SVGs, searched before the bundled Material set (same file names)
         fill = 0.72, -- the icon as a fraction of the cell height, centred in its two cells
+        guide_px = 2, -- the thickness of a tree guide line image, in pixels
+        cell_em = 0.6, -- the terminal font's cell width in ems (puts a guide under a Nerd glyph's middle)
+    },
+    -- how buffer views put an icon on a line, per kind: "real" (in the text) | "virtual" (inline
+    -- virtual text the cursor skips); bars, winbars and tab lines always use text
+    placement = {
+        font = "real",
+        image = "virtual",
     },
     default = { glyph = "", role = "fg", name = "default" },
     overrides = {
