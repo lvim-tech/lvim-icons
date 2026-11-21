@@ -120,6 +120,16 @@ is two cells wide — always align columns from the returned `width` — and its
 foreground is the image id, so it is kept out of backdrop dimming and re-asserted on `:colorscheme`.
 `:checkhealth lvim-icons` reports the terminal state, the image size and the **active** mode.
 
+### The shared icon set
+
+The Material set is shared by every lvim program — lvim-icons here, lvim-fuzzy (`lfz`) and lvim-commander
+(`lvc`) in the terminal — in ONE place: `~/.local/share/lvim-icons/material` (`$XDG_DATA_HOME`). Each one
+carries the set and puts it there when it is missing or older (never a downgrade; swapped in atomically,
+so two programs at once never see half a set), and each reads it from there. lvim-icons does it at
+`setup()` (deferred, off the startup path); when the shared place is unusable it reads its own
+`assets/material`. After `scripts/update-material.sh`, run lvim-fuzzy-ui's `scripts/pack-material.sh` so
+the terminal programs carry the new version too.
+
 ### Tree guide lines
 
 `require("lvim-icons").guide({ hl = "MyTreeGuide", under = icon })` gives the vertical line a tree draws under

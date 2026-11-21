@@ -17,13 +17,126 @@
 local M = {}
 
 --- The bundled theme directory (…/lvim-icons/assets/material).
-M.DIR = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h:h:h") .. "/assets/material"
+M.BUNDLE = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h:h:h") .. "/assets/material"
+
+--- The SHARED place of the set, one for every lvim program: lvim-icons here, lvim-fuzzy (`lfz`) and
+--- lvim-commander (`lvc`) in the terminal — `$XDG_DATA_HOME/lvim-icons/material`. Each of them carries the
+--- set and puts it there when it is missing or older (never a downgrade); each reads it from there.
+M.SHARED = ((vim.env.XDG_DATA_HOME ~= nil and vim.env.XDG_DATA_HOME ~= "") and vim.env.XDG_DATA_HOME
+    or (vim.env.HOME .. "/.local/share")) .. "/lvim-icons/material"
+
+--- Where the set is read from: the shared place once `sync` found it current, else the bundle.
+M.DIR = M.BUNDLE
 
 ---@type table|false|nil  the decoded manifest (false = unreadable)
 local manifest
 
+---@param dir string
+---@return string?
+local function version_of(dir)
+    local f = io.open(dir .. "/VERSION", "r")
+    if not f then
+        return nil
+    end
+    local v = vim.trim(f:read("*a") or "")
+    f:close()
+    return v ~= "" and v or nil
+end
+
+--- `a` is a newer version than `b` (numerically, part by part: 5.40.0 > 5.9.9).
+---@param a string
+---@param b string
+---@return boolean
+local function newer(a, b)
+    local pa, pb = vim.split(a, ".", { plain = true }), vim.split(b, ".", { plain = true })
+    for i = 1, math.max(#pa, #pb) do
+        local x, y = tonumber(pa[i]) or 0, tonumber(pb[i]) or 0
+        if x ~= y then
+            return x > y
+        end
+    end
+    return false
+end
+M._newer = newer -- test seam
+
+--- Copy the bundle into the shared place, atomically: into a sibling directory first, then swapped in with
+--- renames, so a program reading it (or installing at the same moment) never sees half a set.
+---@return boolean ok
+local function install_shared()
+    local parent = vim.fn.fnamemodify(M.SHARED, ":h")
+    vim.fn.mkdir(parent, "p")
+    local pid = vim.uv.os_getpid()
+    local tmp = ("%s/.material-new-%d"):format(parent, pid)
+    local old = ("%s/.material-old-%d"):format(parent, pid)
+    vim.fn.delete(tmp, "rf")
+    if vim.fn.mkdir(tmp, "p") == 0 then
+        return false
+    end
+    local scan = vim.uv.fs_scandir(M.BUNDLE)
+    while scan do
+        local name, kind = vim.uv.fs_scandir_next(scan)
+        if not name then
+            break
+        end
+        if kind == "file" and not vim.uv.fs_copyfile(M.BUNDLE .. "/" .. name, tmp .. "/" .. name) then
+            vim.fn.delete(tmp, "rf")
+            return false
+        end
+    end
+    local had = vim.uv.fs_stat(M.SHARED) ~= nil
+    if had and not vim.uv.fs_rename(M.SHARED, old) then
+        vim.fn.delete(tmp, "rf")
+        return false
+    end
+    if not vim.uv.fs_rename(tmp, M.SHARED) then
+        if had then
+            vim.uv.fs_rename(old, M.SHARED)
+        end
+        vim.fn.delete(tmp, "rf")
+        return false
+    end
+    if had then
+        vim.fn.delete(old, "rf")
+    end
+    return true
+end
+
+local synced = false
+
+--- Test seam: forget that `sync` ran (and the decoded manifest).
+function M._reset_sync()
+    synced = false
+    manifest = nil
+    M.DIR = M.BUNDLE
+end
+
+--- Bring the shared place up to the bundle (when it is missing there or older) and read from it when it
+--- is at least as new as the bundle; else read the bundle. Once per session (cheap: two small files).
+function M.sync()
+    if synced then
+        return
+    end
+    synced = true
+    local bv = version_of(M.BUNDLE)
+    local sv = version_of(M.SHARED)
+    local have_json = vim.uv.fs_stat(M.SHARED .. "/material-icons.json") ~= nil
+    if bv and (not sv or not have_json or newer(bv, sv)) then
+        pcall(install_shared)
+        sv = version_of(M.SHARED)
+    end
+    local dir = M.BUNDLE
+    if sv and vim.uv.fs_stat(M.SHARED .. "/material-icons.json") and (not bv or not newer(bv, sv)) then
+        dir = M.SHARED
+    end
+    if dir ~= M.DIR then
+        M.DIR = dir
+        manifest = nil
+    end
+end
+
 ---@return table?
 local function load()
+    M.sync()
     if manifest == nil then
         manifest = false
         local f = io.open(M.DIR .. "/material-icons.json", "r")

@@ -234,6 +234,11 @@ function M.setup(opts)
     hl.setup()
     hl.bind(highlights.build)
     hl.bind(highlights.build_brands)
+    -- the Material set into the shared place (~/.local/share/lvim-icons/material), when it is missing there or
+    -- older — lvim-fuzzy and lvim-commander read it from there too; deferred, off the startup path
+    vim.schedule(function()
+        pcall(require("lvim-icons.material").sync)
+    end)
     -- image modes: the image-id groups survive veils and :colorscheme; a font change redraws the images
     require("lvim-icons.placeholders").setup()
     svg.setup() -- image modes: recolour the images when the theme changes
